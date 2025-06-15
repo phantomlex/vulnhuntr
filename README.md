@@ -1,10 +1,10 @@
-# This is a forked repository that integrated Gemini 2.0 Flash API into the code
+### This is a forked repository that integrated Gemini 2.0 Flash API into the code
 
 disclaimer: This fork integrates gemini 2.0 flash, which works correctly. However, jedi bugs out sometimes. All testing done on vscode, latest jedi. It is recommended to end terminal and reopen vscode and rerun because fixing jedi is definitely not my field of expertise. 
 
 I am new to github and i did not know where to put my notes so i'm editing this instead. Thank you.
 
-# Below is the original owners Documentation:
+### Below is the original owners Documentation:
 
 
 <div align="center">
