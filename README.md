@@ -1,6 +1,6 @@
 ### This is a forked repository that integrated Gemini 2.0 Flash API into the code
 
-#### Kindly change the branch to Gemini 2.0 Flash to use
+#### Kindly change the branch to gemini-2.0-flash to use or access documentation
 
 disclaimer: This fork integrates gemini 2.0 flash, which works correctly. However, jedi bugs out sometimes. All testing done on vscode, latest jedi. It is recommended to end terminal and reopen vscode and rerun because fixing jedi is definitely not my field of expertise. 
 
