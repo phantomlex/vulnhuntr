@@ -1,11 +1,17 @@
-import logging
-from typing import List, Union, Dict, Any
+from google.generativeai.types import HarmCategory, HarmBlockThreshold
+from json import dumps, loads
 from pydantic import BaseModel, ValidationError
+from typing import List, Union, Dict, Any
 import anthropic
-import os
-import openai
 import dotenv
+import google.generativeai as genai
+import logging
+import openai
+import os
 import requests
+import sys
+import codecs
+import demjson3
 
 dotenv.load_dotenv()
 
@@ -27,7 +33,6 @@ class APIStatusError(LLMError):
         self.response = response
         super().__init__(f"Received non-200 status code: {status_code}")
 
-# Base LLM class to handle common functionality
 class LLM:
     def __init__(self, system_prompt: str = "") -> None:
         self.system_prompt = system_prompt
@@ -37,12 +42,19 @@ class LLM:
         self.prefill = None
 
     def _validate_response(self, response_text: str, response_model: BaseModel) -> BaseModel:
+        """Validates the response from the LLM"""
         try:
             if self.prefill:
                 response_text = self.prefill + response_text
-            return response_model.model_validate_json(response_text)
-        except ValidationError as e:
-            log.warning("[-] Response validation failed\n", exc_info=e)
+            print("--- Attempting to Parse with demjson3 ---")
+            print(response_text)
+            print("-----------------------------------------")
+            decoded_json = demjson3.decode(response_text)
+            
+            return response_model.model_validate(decoded_json)
+        except Exception as e:
+            print("[-] Response validation failed even with demjson3.")
+            log.warning("Response validation failed", exc_info=e)
             raise LLMError("Validation failed") from e
             # try:
             #     response_clean_attempt = response_text.split('{', 1)[1]
@@ -59,25 +71,40 @@ class LLM:
         raise e
 
     def _log_response(self, response: Dict[str, Any]) -> None:
-        usage_info = response.usage.__dict__
-        log.debug("Received chat response", extra={"usage": usage_info})
+        if hasattr(response, 'usage') and response.usage:
+            usage_info = response.usage.__dict__
+            log.debug("Received chat response", extra={"usage": usage_info})
+        else:
+            log.debug("Received chat response (usage data not available)")
 
     def chat(self, user_prompt: str, response_model: BaseModel = None, max_tokens: int = 4096) -> Union[BaseModel, str]:
+        """Sends a prompt to the LLM and returns the response"""
         self._add_to_history("user", user_prompt)
         messages = self.create_messages(user_prompt)
         response = self.send_message(messages, max_tokens, response_model)
         self._log_response(response)
 
-        response_text = self.get_response(response)
+        raw_response_text = self.get_response(response)
+
+        if '```json' in raw_response_text:
+            raw_response_text = raw_response_text.split('```json')[1].split('```')[0]
+        clean_response_text = raw_response_text.strip()
+
+        self._add_to_history("assistant", clean_response_text)
+
         if response_model:
-            response_text = self._validate_response(response_text, response_model) if response_model else response_text
-        self._add_to_history("assistant", response_text)
-        return response_text
+            print("--- Attempting to Validate the Following JSON ---")
+            print(clean_response_text)
+            try:
+                return self._validate_response(clean_response_text, response_model)
+            except Exception as e:
+                raise LLMError("Validation failed after cleaning") from e
+
+        return clean_response_text
 
 class Claude(LLM):
     def __init__(self, model: str, base_url: str, system_prompt: str = "") -> None:
         super().__init__(system_prompt)
-        # API key is retrieved from an environment variable by default
         self.client = anthropic.Anthropic(max_retries=3, base_url=base_url)
         self.model = model
 
@@ -188,3 +215,49 @@ class Ollama(LLM):
     def _log_response(self, response: Dict[str, Any]) -> None:
         log.debug("Received chat response", extra={"usage": "Ollama"})
 
+
+
+class Gemini(LLM):
+    """
+    A class for interacting with the Google Gemini API.
+    """
+
+    def __init__(self, model: str, system_prompt: str = "") -> None:
+        """Initialises the Gemini LLM"""
+        super().__init__(system_prompt)
+        genai.configure(api_key="YOUR API KEY HERE")
+
+        kwargs = {
+            "model_name": model,
+            "generation_config": {
+                "response_mime_type": "application/json", 
+                "temperature": 1,
+                "max_output_tokens": 8192, 
+            },
+            "safety_settings": {
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+            },
+        }
+        if system_prompt:
+            self.client = genai.GenerativeModel(system_instruction=system_prompt, **kwargs)
+        else:
+            self.client = genai.GenerativeModel(**kwargs)
+
+    def create_messages(self, user_prompt: str) -> list:
+        messages = self.system_prompt + "\n"
+        for message in self.history:
+            if isinstance(message, dict):
+                messages += f"## {message['role']}\n{message['content']}\n"
+            else:
+                messages += f"{message}\n"
+        messages += f"## user\n{user_prompt}"
+        return messages
+
+    def get_response(self, response) -> str:
+        """Gets the response from the LLM"""
+        return response.text
+
+    def send_message(self, messages: str, max_tokens: int = 4096, response_model: BaseModel = None) -> str:
+        """Sends a message to the LLM and returns the response."""
+        response = self.client.generate_content(messages)
+        return response
