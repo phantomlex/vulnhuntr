@@ -6,6 +6,27 @@ disclaimer: This fork integrates gemini 2.0 flash, which works correctly. Howeve
 
 I am new to github and i did not know where to put my notes so i'm editing this instead. Thank you.
 
+###### "Gemini support is also experimental.
+
+in the LLM.py, enter your gemini api key. in case anything doesn't work, here some steps to follow:
+
+inside your terminal, 
+
+`git clone https://github.com/protectai/vulnhuntr.git`
+
+`cd vulnhuntr`
+
+`git fetch origin pull/26/head:gemini-support`
+
+`git checkout gemini-support`
+
+`pip install -r requirements.txt`
+
+then replace with my own LLM.py and main.py, then enter your gemini api key."
+
+#
+#
+
 ### Below is the original owners Documentation:
 
 #
@@ -140,12 +161,21 @@ vulnhuntr -r /path/to/target/repo/ -a server.py -l ollama
 
 Gemini support is also experimental.
 
-```bash
-export GEMINI_API_KEY=<your key>
-export GEMINI_MODEL=gemini-2.0-flash # Optional, gemini-1.5-flash-002 is the default  
-vulnhuntr -r /path/to/target/repo/ -a server.py -l gemini
-```
+in the LLM.py, enter your gemini api key. in case anything doesn't work, here some steps to follow:
 
+inside your terminal, 
+
+`git clone https://github.com/protectai/vulnhuntr.git`
+
+`cd vulnhuntr`
+
+`git fetch origin pull/26/head:gemini-support`
+
+`git checkout gemini-support`
+
+`pip install -r requirements.txt`
+
+then replace with my own LLM.py and main.py, then enter your gemini api key.
 
 ## Logic Flow
 ![VulnHuntr logic](https://github.com/user-attachments/assets/7757b053-36ff-425e-ab3d-ab0100c81d49)
