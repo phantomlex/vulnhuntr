@@ -142,7 +142,7 @@ Gemini support is also experimental.
 
 ```bash
 export GEMINI_API_KEY=<your key>
-export GEMINI_MODEL=gemini-1.5-flash-002  # Optional, gemini-1.5-flash-002 is the default  
+export GEMINI_MODEL=gemini-2.0-flash # Optional, gemini-1.5-flash-002 is the default  
 vulnhuntr -r /path/to/target/repo/ -a server.py -l gemini
 ```
 
