@@ -23,6 +23,14 @@ inside your terminal,
 
 then replace with my own LLM.py and main.py, then enter your gemini api key."
 
+sample terminal code to run it, suppose the sample folder contains the sample codes,
+
+![image](https://github.com/user-attachments/assets/33bdc826-67af-4768-9d74-cf62a2855bbd)
+
+
+```bash
+vulnhuntr --root sample --llm gemini > scan_results.txt
+```
 #
 #
 
